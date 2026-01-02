@@ -89,15 +89,21 @@ export function createGoldenSpiral() {
     return { group, spiral, squares, goldenParticles };
 }
 
-export function updateGoldenSpiral(data, time) {
+export function updateGoldenSpiral(data, mouse, time) {
     const { spiral, squares, goldenParticles } = data;
 
-    spiral.rotation.z = time * 0.1;
+    spiral.rotation.z = time * 0.1 + mouse.x * 0.5;
+    spiral.rotation.x = mouse.y * 0.3;
 
     squares.forEach((square) => {
-        square.rotation.z = time * 0.05 * (square.userData.index % 2 ? 1 : -1);
+        square.rotation.z = time * 0.05 * (square.userData.index % 2 ? 1 : -1) + mouse.x * 0.2;
         square.material.opacity = 0.1 + Math.sin(time + square.userData.index) * 0.05;
+
+        // React to mouse
+        const scale = 1 + mouse.y * 0.1 * (square.userData.index % 3 - 1);
+        square.scale.setScalar(scale);
     });
 
-    goldenParticles.rotation.z = time * 0.08;
+    goldenParticles.rotation.z = time * 0.08 - mouse.x * 0.2;
+    goldenParticles.rotation.y = mouse.y * 0.2;
 }

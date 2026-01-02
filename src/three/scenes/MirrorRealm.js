@@ -85,17 +85,20 @@ export function createMirrorRealm() {
     return { group, mirror, frame, objects, shimmer };
 }
 
-export function updateMirrorRealm(data, time) {
+export function updateMirrorRealm(data, mouse, time) {
     const { mirror, frame, objects, shimmer } = data;
 
-    mirror.rotation.y = Math.sin(time * 0.3) * 0.1;
+    mirror.rotation.y = Math.sin(time * 0.3) * 0.1 - mouse.x * 0.2;
+    mirror.rotation.x = mouse.y * 0.1;
     mirror.material.opacity = 0.25 + Math.sin(time * 2) * 0.1;
 
     frame.rotation.z = time * 0.1;
+    frame.rotation.y = -mouse.x * 0.1;
+    frame.rotation.x = mouse.y * 0.1;
 
     objects.forEach((obj) => {
-        obj.rotation.x = time * 0.5 + obj.userData.offset;
-        obj.rotation.y = time * 0.3 + obj.userData.offset;
+        obj.rotation.x = time * 0.5 + obj.userData.offset + mouse.y * 0.5;
+        obj.rotation.y = time * 0.3 + obj.userData.offset + mouse.x * 0.5;
 
         // Mirror reflection effect
         if (obj.userData.isReflection) {
@@ -103,5 +106,6 @@ export function updateMirrorRealm(data, time) {
         }
     });
 
-    shimmer.rotation.y = time * 0.02;
+    shimmer.rotation.y = time * 0.02 + mouse.x * 0.2;
+    shimmer.rotation.x = -mouse.y * 0.2;
 }

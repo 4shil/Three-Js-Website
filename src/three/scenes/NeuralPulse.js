@@ -80,21 +80,31 @@ export function createNeuralPulse() {
     return { group, nodes, connections, pulseParticles };
 }
 
-export function updateNeuralPulse(data, time) {
+export function updateNeuralPulse(data, mouse, time) {
     const { nodes, connections, pulseParticles } = data;
 
     // Pulse nodes
-    nodes.forEach((node) => {
+    nodes.forEach((node, i) => {
         const scale = 1 + Math.sin(time * 3 + node.userData.pulseOffset) * 0.4;
         node.scale.setScalar(scale);
         node.material.opacity = 0.6 + Math.sin(time * 3 + node.userData.pulseOffset) * 0.3;
+
+        // Drift based on mouse
+        node.position.x += Math.sin(time + i) * 0.01 + mouse.x * 0.02;
+        node.position.y += Math.cos(time + i) * 0.01 + mouse.y * 0.02;
     });
+
+    // Update connections (re-draw lines if nodes move significantly? 
+    // Usually expensive, but here we just rotate the group or rely on visual abstractness)
+    // Instead we rotate the whole group slightly
+    data.group.rotation.y = mouse.x * 0.2;
+    data.group.rotation.x = -mouse.y * 0.2;
 
     // Animate connection opacity
     connections.forEach((line, i) => {
         line.material.opacity = 0.2 + Math.sin(time * 2 + i * 0.1) * 0.15;
     });
 
-    pulseParticles.rotation.y = time * 0.02;
-    pulseParticles.rotation.x = Math.sin(time * 0.5) * 0.1;
+    pulseParticles.rotation.y = time * 0.02 + mouse.x * 0.1;
+    pulseParticles.rotation.x = Math.sin(time * 0.5) * 0.1 - mouse.y * 0.1;
 }

@@ -85,13 +85,13 @@ export function createCosmicStorm() {
     return { group, clouds, lightnings, stormParticles };
 }
 
-export function updateCosmicStorm(data, time) {
+export function updateCosmicStorm(data, mouse, time) {
     const { clouds, lightnings, stormParticles } = data;
 
     // Animate clouds
     clouds.forEach((cloud) => {
-        cloud.position.x += Math.sin(time + cloud.userData.offset) * 0.01;
-        cloud.position.y += Math.cos(time * 0.5 + cloud.userData.offset) * 0.005;
+        cloud.position.x += Math.sin(time + cloud.userData.offset) * 0.01 + mouse.x * 0.05;
+        cloud.position.y += Math.cos(time * 0.5 + cloud.userData.offset) * 0.005 - mouse.y * 0.05;
     });
 
     // Lightning flashes
@@ -99,9 +99,15 @@ export function updateCosmicStorm(data, time) {
         const flashCycle = (time * 2) % 10;
         if (Math.abs(flashCycle - lightning.userData.flashTime) < 0.2) {
             lightning.material.opacity = 0.8 + Math.random() * 0.2;
+            // Jitter on flash
+            lightning.rotation.z = (Math.random() - 0.5) * 0.2;
         } else {
             lightning.material.opacity *= 0.9;
         }
+
+        // Tilt lightning with mouse
+        lightning.rotation.x = mouse.y * 0.2;
+        lightning.rotation.y = -mouse.x * 0.2;
     });
 
     // Animate storm particles
@@ -109,12 +115,14 @@ export function updateCosmicStorm(data, time) {
     const velocities = stormParticles.userData.velocities;
 
     for (let i = 0; i < positions.length; i += 3) {
-        positions[i] += velocities[i / 3] * 0.5;
-        positions[i + 1] -= velocities[i / 3] * 0.3;
+        positions[i] += velocities[i / 3] * 0.5 + mouse.x * 0.2; // Wind effect
+        positions[i + 1] -= velocities[i / 3] * 0.3 + mouse.y * 0.2;
 
         // Reset particles that go out of bounds
         if (positions[i] > 20) positions[i] = -20;
+        if (positions[i] < -20) positions[i] = 20;
         if (positions[i + 1] < -15) positions[i + 1] = 15;
+        if (positions[i + 1] > 15) positions[i + 1] = -15;
     }
 
     stormParticles.geometry.attributes.position.needsUpdate = true;

@@ -96,7 +96,7 @@ export function createWarpTunnel() {
     return { group, rings, speedLines, centerLight, warpParticles };
 }
 
-export function updateWarpTunnel(data, time) {
+export function updateWarpTunnel(data, mouse, time) {
     const { rings, speedLines, centerLight, warpParticles } = data;
 
     // Animate rings moving toward viewer
@@ -105,24 +105,34 @@ export function updateWarpTunnel(data, time) {
         if (ring.position.z > 30) {
             ring.position.z -= 60;
         }
-        ring.rotation.z = time * 0.5 + i * 0.1;
+        ring.rotation.z = time * 0.5 + i * 0.1 + mouse.x * 0.5;
+
+        // Steer rings
+        ring.position.x = mouse.x * 5 * (ring.position.z + 60) / 60;
+        ring.position.y = mouse.y * 5 * (ring.position.z + 60) / 60;
     });
 
     // Animate speed lines
     const positions = speedLines.geometry.attributes.position.array;
     for (let i = 0; i < positions.length; i += 6) {
-        positions[i + 2] += 0.5;
-        positions[i + 5] += 0.5;
+        positions[i + 2] += 0.5 + mouse.y * 0.2; // Speed up/dwn
+        positions[i + 5] += 0.5 + mouse.y * 0.2;
 
         if (positions[i + 2] > 30) {
             positions[i + 2] -= 60;
             positions[i + 5] -= 60;
         }
+
+        // Shift lines based on mouse
+        positions[i] += mouse.x * 0.1;
+        positions[i + 3] += mouse.x * 0.1;
     }
     speedLines.geometry.attributes.position.needsUpdate = true;
 
     // Pulse center light
     centerLight.scale.setScalar(1 + Math.sin(time * 5) * 0.2);
+    centerLight.position.x = mouse.x * 2;
+    centerLight.position.y = mouse.y * 2;
 
     // Animate warp particles
     const warpPos = warpParticles.geometry.attributes.position.array;
@@ -133,4 +143,5 @@ export function updateWarpTunnel(data, time) {
         }
     }
     warpParticles.geometry.attributes.position.needsUpdate = true;
+    warpParticles.rotation.z = -mouse.x * 0.5;
 }

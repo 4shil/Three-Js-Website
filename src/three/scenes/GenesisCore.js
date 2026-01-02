@@ -115,30 +115,34 @@ export function createGenesisCore() {
     return { group, core, innerCore, orbits, tendrils, creationParticles };
 }
 
-export function updateGenesisCore(data, time) {
+export function updateGenesisCore(data, mouse, time) {
     const { core, innerCore, orbits, tendrils, creationParticles } = data;
 
     // Pulse core
     core.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
     core.material.opacity = 0.6 + Math.sin(time * 3) * 0.1;
+    core.rotation.y = mouse.x * 0.5;
+    core.rotation.x = -mouse.y * 0.5;
 
     // Spin inner core
-    innerCore.rotation.x = time * 0.5;
-    innerCore.rotation.y = time * 0.3;
+    innerCore.rotation.x = time * 0.5 + mouse.y;
+    innerCore.rotation.y = time * 0.3 + mouse.x;
     innerCore.rotation.z = time * 0.4;
 
     // Animate orbits
     orbits.forEach((orbit) => {
-        orbit.rotation.z = time * 0.2 * (orbit.userData.index + 1);
+        orbit.rotation.z = time * 0.2 * (orbit.userData.index + 1) + mouse.x * 0.2;
+        orbit.rotation.x = Math.PI / 2 + orbit.userData.index * 0.3 + mouse.y * 0.2;
     });
 
     // Animate tendrils
     tendrils.forEach((tendril, i) => {
-        tendril.rotation.z = time * 0.1 + tendril.userData.baseAngle;
+        tendril.rotation.z = time * 0.1 + tendril.userData.baseAngle + mouse.x * 0.1;
+        tendril.rotation.x = -mouse.y * 0.1;
         tendril.material.opacity = 0.4 + Math.sin(time * 2 + i) * 0.1;
     });
 
     // Rotate creation particles
-    creationParticles.rotation.y = time * 0.05;
-    creationParticles.rotation.x = Math.sin(time * 0.2) * 0.1;
+    creationParticles.rotation.y = time * 0.05 + mouse.x * 0.2;
+    creationParticles.rotation.x = Math.sin(time * 0.2) * 0.1 - mouse.y * 0.2;
 }

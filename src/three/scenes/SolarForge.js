@@ -89,20 +89,23 @@ export function createSolarForge() {
     return { group, sun, corona, flares, eruptions };
 }
 
-export function updateSolarForge(data, time) {
+export function updateSolarForge(data, mouse, time) {
     const { sun, corona, flares, eruptions } = data;
 
-    sun.rotation.y = time * 0.1;
+    sun.rotation.y = time * 0.1 + mouse.x * 0.2;
+    sun.rotation.x = mouse.y * 0.2;
     sun.scale.setScalar(1 + Math.sin(time * 3) * 0.02);
 
     corona.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
-    corona.rotation.z = time * 0.05;
+    corona.rotation.z = time * 0.05 - mouse.x * 0.1;
 
     flares.forEach((flare, i) => {
-        flare.rotation.z = time * 0.1 + flare.userData.angle;
+        flare.rotation.z = time * 0.1 + flare.userData.angle + mouse.y * 0.3;
+        flare.rotation.x = mouse.x * 0.2;
         flare.material.opacity = 0.4 + Math.sin(time * 2 + i) * 0.2;
     });
 
-    eruptions.rotation.z = time * 0.03;
-    eruptions.rotation.y = time * 0.02;
+    eruptions.rotation.z = time * 0.03 + mouse.x * 0.1;
+    eruptions.rotation.y = time * 0.02 + mouse.y * 0.1;
+    eruptions.position.x = -mouse.x * 2;
 }

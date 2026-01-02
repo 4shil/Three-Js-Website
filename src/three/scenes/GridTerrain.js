@@ -64,16 +64,20 @@ export function createGridTerrain() {
     return { group, gridHelper, mountains, cubes };
 }
 
-export function updateGridTerrain(data, time) {
+export function updateGridTerrain(data, mouse, time) {
     const { gridHelper, mountains, cubes } = data;
 
     // Moving grid effect
     gridHelper.position.z = (time * 3) % 2;
+    gridHelper.rotation.x = mouse.y * 0.1;
+    gridHelper.rotation.z = -mouse.x * 0.1;
 
     // Animate mountains
     mountains.forEach((mtn) => {
         mtn.rotation.y += 0.008;
         mtn.position.y = 2 + Math.sin(time + mtn.userData.offset) * 0.6;
+        // Subtle paralax
+        mtn.rotation.z = -mouse.x * 0.05;
     });
 
     // Animate cubes
@@ -81,5 +85,8 @@ export function updateGridTerrain(data, time) {
         cube.rotation.x += 0.02 * cube.userData.speed;
         cube.rotation.y += 0.01 * cube.userData.speed;
         cube.position.y = cube.position.y + Math.sin(time * cube.userData.speed + cube.userData.offset) * 0.01;
+
+        // Repel from mouse slightly
+        cube.position.x += mouse.x * 0.01 * cube.userData.speed;
     });
 }

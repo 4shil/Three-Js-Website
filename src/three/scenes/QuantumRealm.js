@@ -69,7 +69,7 @@ export function createQuantumRealm() {
     return { group, quantumParticles, originalQPos, qCount, waves, nucleus };
 }
 
-export function updateQuantumRealm(data, time) {
+export function updateQuantumRealm(data, mouse, time) {
     const { quantumParticles, originalQPos, qCount, waves, nucleus } = data;
 
     // Quantum "teleportation" effect
@@ -78,8 +78,13 @@ export function updateQuantumRealm(data, time) {
     for (let i = 0; i < qCount; i++) {
         const i3 = i * 3;
 
-        // Occasionally "teleport" particles
-        if (Math.random() < 0.002) {
+        // React to mouse proximity
+        const dx = positions[i3] - mouse.x * 10;
+        const dy = positions[i3 + 1] - mouse.y * 10;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Occasionally "teleport" or jitter near mouse
+        if (Math.random() < 0.002 || (dist < 4 && Math.random() < 0.05)) {
             positions[i3] = (Math.random() - 0.5) * 20;
             positions[i3 + 1] = (Math.random() - 0.5) * 20;
             positions[i3 + 2] = (Math.random() - 0.5) * 20;
@@ -92,17 +97,20 @@ export function updateQuantumRealm(data, time) {
     }
 
     quantumParticles.geometry.attributes.position.needsUpdate = true;
-    quantumParticles.rotation.y = time * 0.05;
+    quantumParticles.rotation.y = time * 0.05 + mouse.x * 0.2;
+    quantumParticles.rotation.x = -mouse.y * 0.2;
 
     // Animate probability waves
     waves.forEach((wave, i) => {
-        wave.rotation.x = time * 0.2 + i * 0.5;
-        wave.rotation.y = time * 0.15 + i * 0.3;
+        wave.rotation.x = time * 0.2 + i * 0.5 + mouse.y * 0.3;
+        wave.rotation.y = time * 0.15 + i * 0.3 + mouse.x * 0.3;
         wave.scale.setScalar(1 + Math.sin(time * 2 + i) * 0.1);
     });
 
     // Animate nucleus
-    nucleus.rotation.x = time * 0.5;
-    nucleus.rotation.y = time * 0.3;
+    nucleus.rotation.x = time * 0.5 + mouse.y;
+    nucleus.rotation.y = time * 0.3 + mouse.x;
     nucleus.scale.setScalar(1 + Math.sin(time * 4) * 0.1);
+    nucleus.position.x = mouse.x;
+    nucleus.position.y = mouse.y;
 }

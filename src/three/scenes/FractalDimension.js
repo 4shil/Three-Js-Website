@@ -57,15 +57,19 @@ export function createFractalDimension() {
     return { group, cubes, fractalParticles };
 }
 
-export function updateFractalDimension(data, time) {
+export function updateFractalDimension(data, mouse, time) {
     const { cubes, fractalParticles } = data;
 
     cubes.forEach((cube, i) => {
-        cube.rotation.x = time * 0.2 * (1 + i * 0.1);
-        cube.rotation.y = time * 0.15 * (1 - i * 0.05);
+        cube.rotation.x = time * 0.2 * (1 + i * 0.1) + mouse.y * 0.5;
+        cube.rotation.y = time * 0.15 * (1 - i * 0.05) + mouse.x * 0.5;
         cube.rotation.z = time * 0.1 * (i % 2 ? 1 : -1);
+
+        // Expand on mouse move
+        const expansion = Math.max(Math.abs(mouse.x), Math.abs(mouse.y)) * 0.2;
+        cube.scale.setScalar(1 + expansion * (i * 0.1));
     });
 
-    fractalParticles.rotation.z = time * 0.05;
-    fractalParticles.rotation.y = time * 0.03;
+    fractalParticles.rotation.z = time * 0.05 + mouse.x * 0.2;
+    fractalParticles.rotation.y = time * 0.03 + mouse.y * 0.2;
 }

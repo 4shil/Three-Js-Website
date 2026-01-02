@@ -68,17 +68,18 @@ export function createArtifact() {
     return { group, crystal, innerCrystal, wireCage, orbitParticles };
 }
 
-export function updateArtifact(data, time) {
+export function updateArtifact(data, mouse, time) {
     const { crystal, innerCrystal, wireCage, orbitParticles } = data;
 
-    crystal.rotation.y = time * 0.3;
-    crystal.rotation.z = Math.sin(time * 0.5) * 0.15;
+    crystal.rotation.y = time * 0.3 + mouse.x * 0.5;
+    crystal.rotation.z = Math.sin(time * 0.5) * 0.15 - mouse.y * 0.3;
 
     innerCrystal.rotation.y = -time * 0.5;
     innerCrystal.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
 
-    wireCage.rotation.x = time * 0.15;
-    wireCage.rotation.y = -time * 0.1;
+    wireCage.rotation.x = time * 0.15 + mouse.y * 0.2;
+    wireCage.rotation.y = -time * 0.1 + mouse.x * 0.2;
 
-    orbitParticles.rotation.y = time * 0.2;
+    orbitParticles.rotation.y = time * 0.2 + mouse.x * 0.1;
+    orbitParticles.rotation.x = mouse.y * 0.2;
 }

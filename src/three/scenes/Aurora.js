@@ -68,15 +68,20 @@ export function createAurora() {
     return { group, ribbons, particles };
 }
 
-export function updateAurora(data, time) {
+export function updateAurora(data, mouse, time) {
     const { ribbons, particles } = data;
 
     ribbons.forEach((ribbon, i) => {
-        ribbon.position.y = Math.sin(time * 0.5 + ribbon.userData.offset) * 0.5;
-        ribbon.rotation.z = Math.sin(time * 0.3 + ribbon.userData.offset) * 0.05;
+        // Wave based on mouse
+        const mouseEffect = Math.sin(time + i + mouse.x * 2) * 0.3;
+
+        ribbon.position.y = Math.sin(time * 0.5 + ribbon.userData.offset) * 0.5 + mouse.y * (i * 0.1);
+        ribbon.rotation.z = Math.sin(time * 0.3 + ribbon.userData.offset) * 0.05 + mouse.x * 0.05;
+        ribbon.rotation.x = -mouse.y * 0.05;
         ribbon.material.opacity = 0.3 + Math.sin(time + ribbon.userData.offset) * 0.1;
     });
 
-    particles.rotation.y = time * 0.02;
+    particles.rotation.y = time * 0.02 + mouse.x * 0.1;
+    particles.rotation.x = -mouse.y * 0.1;
     particles.position.y = Math.sin(time * 0.3) * 0.5;
 }

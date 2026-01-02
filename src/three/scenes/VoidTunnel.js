@@ -64,15 +64,22 @@ export function createVoidTunnel() {
     return { group, tunnel, voidSphere, ring };
 }
 
-export function updateVoidTunnel(data, time) {
+export function updateVoidTunnel(data, mouse, time) {
     const { tunnel, voidSphere, ring } = data;
 
-    tunnel.rotation.z = time * 0.08;
-    tunnel.scale.x = 1 + Math.sin(time * 1.5) * 0.08;
-    tunnel.scale.y = 1 + Math.cos(time * 1.5) * 0.08;
+    tunnel.rotation.z = time * 0.08 + mouse.x * 0.2;
+    tunnel.rotation.y = mouse.x * 0.1;
+    tunnel.rotation.x = -mouse.y * 0.1;
+
+    tunnel.scale.x = 1 + Math.sin(time * 1.5) * 0.08 - mouse.y * 0.2;
+    tunnel.scale.y = 1 + Math.cos(time * 1.5) * 0.08 + mouse.x * 0.2;
 
     voidSphere.scale.setScalar(1 + Math.sin(time * 3) * 0.05);
+    voidSphere.position.x = -mouse.x * 0.5;
+    voidSphere.position.y = mouse.y * 0.5;
 
     ring.rotation.z = time * 0.5;
+    ring.rotation.x = Math.PI / 2 + mouse.y * 0.3;
+    ring.rotation.y = -mouse.x * 0.3;
     ring.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
 }

@@ -21,39 +21,44 @@ const SCENE_POSITIONS = [
     -325    // Scene 14: Genesis
 ];
 
-export function createScrollAnimations(camera, sceneGroups) {
+export function createScrollAnimations(camera, sceneGroups, lenis) {
+    // Integrate Lenis with ScrollTrigger
+    if (lenis) {
+        lenis.on('scroll', ScrollTrigger.update);
+    }
+
+    // All scenes stay visible at scale 1,1,1 - no hiding
+    // Camera moves through them smoothly
+
+    const totalScenes = sceneGroups.length;
+
     const tl = gsap.timeline({
         scrollTrigger: {
             trigger: 'body',
             start: 'top top',
             end: 'bottom bottom',
-            scrub: 1.8
+            scrub: 1.2, // Smooth scrub
+            snap: {
+                snapTo: 1 / (totalScenes - 1),
+                duration: { min: 0.3, max: 0.6 },
+                delay: 0.1,
+                ease: "power2.inOut"
+            }
         }
     });
 
-    // Camera movement through scenes
-    const totalScenes = 14;
-
+    // Build Timeline - Camera movement only (no scale animations)
     for (let i = 0; i < totalScenes - 1; i++) {
         const progress = i / (totalScenes - 1);
         const nextProgress = (i + 1) / (totalScenes - 1);
         const duration = nextProgress - progress;
 
-        // Move camera to next scene
+        // Smooth camera movement to next scene
         tl.to(camera.position, {
             z: SCENE_POSITIONS[i + 1] + 10,
             duration: duration,
-            ease: 'power2.inOut'
+            ease: 'power1.inOut' // Gentle ease for smooth feel
         }, progress);
-
-        // Fade out current scene, fade in next
-        if (sceneGroups[i]) {
-            tl.to(sceneGroups[i].scale, {
-                x: 0, y: 0, z: 0,
-                duration: duration * 0.5,
-                ease: 'power2.in'
-            }, progress + duration * 0.3);
-        }
     }
 
     // Content visibility animations
