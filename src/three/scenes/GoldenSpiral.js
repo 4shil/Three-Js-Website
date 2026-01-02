@@ -1,135 +1,133 @@
 import * as THREE from 'three';
 
-// SCENE 12: GOLDEN SPIRAL - Elegant Fibonacci Visualization
-// Mathematical beauty with flowing curves
+// SCENE 12: CONSTELLATION - Beautiful connected star map
+// Elegant network of stars with glowing connections
 
 export function createGoldenSpiral() {
     const group = new THREE.Group();
     group.position.z = -275;
 
-    // Create golden spiral using points
-    const spiralPoints = [];
-    const phi = (1 + Math.sqrt(5)) / 2; // Golden ratio: 1.618...
+    // Star nodes
+    const stars = [];
+    const starCount = 40;
+    const starPositions = [];
 
-    for (let i = 0; i < 300; i++) {
-        const angle = i * 0.12;
-        const radius = Math.pow(phi, angle / (Math.PI * 2)) * 0.2;
-        spiralPoints.push(new THREE.Vector3(
-            Math.cos(angle) * radius,
-            Math.sin(angle) * radius,
-            (i / 300) * 3 - 1.5
-        ));
-    }
+    for (let i = 0; i < starCount; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const radius = 5 + Math.random() * 8;
 
-    // Main spiral tube
-    const spiralCurve = new THREE.CatmullRomCurve3(spiralPoints);
-    const spiralGeo = new THREE.TubeGeometry(spiralCurve, 300, 0.1, 12, false);
-    const spiralMat = new THREE.MeshBasicMaterial({
-        color: 0xffcc00,
-        transparent: true,
-        opacity: 0.7
-    });
-    spiralMat.userData = { baseOpacity: 0.7 };
-    const spiral = new THREE.Mesh(spiralGeo, spiralMat);
-    group.add(spiral);
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.sin(phi) * Math.sin(theta);
+        const z = radius * Math.cos(phi) * 0.5;
 
-    // Fibonacci rectangles as wireframe
-    const rectangles = [];
-    const fibSequence = [1, 1, 2, 3, 5, 8, 13];
-    let posX = 0, posY = 0;
+        starPositions.push(new THREE.Vector3(x, y, z));
 
-    for (let i = 0; i < fibSequence.length; i++) {
-        const size = fibSequence[i] * 0.4;
-        const rectGeo = new THREE.PlaneGeometry(size, size);
-        const edges = new THREE.EdgesGeometry(rectGeo);
-        const rectMat = new THREE.LineBasicMaterial({
-            color: 0xffffff,
+        // Star sphere
+        const starGeo = new THREE.SphereGeometry(0.15 + Math.random() * 0.2, 16, 16);
+        const starMat = new THREE.MeshBasicMaterial({
+            color: i % 5 === 0 ? 0xff3c00 : (i % 3 === 0 ? 0x00ff88 : 0xffffff),
             transparent: true,
-            opacity: 0.2
+            opacity: 0.9
         });
-        rectMat.userData = { baseOpacity: 0.2 };
-        const rect = new THREE.LineSegments(edges, rectMat);
-
-        // Position following Fibonacci pattern
-        rect.position.set(posX, posY, -i * 0.3);
-        rect.userData = { index: i };
-        group.add(rect);
-        rectangles.push(rect);
-
-        // Update position for next rectangle
-        const dir = i % 4;
-        if (dir === 0) posX += size / 2 + fibSequence[Math.min(i + 1, fibSequence.length - 1)] * 0.2;
-        else if (dir === 1) posY -= size / 2 + fibSequence[Math.min(i + 1, fibSequence.length - 1)] * 0.2;
-        else if (dir === 2) posX -= size / 2 + fibSequence[Math.min(i + 1, fibSequence.length - 1)] * 0.2;
-        else posY += size / 2 + fibSequence[Math.min(i + 1, fibSequence.length - 1)] * 0.2;
+        starMat.userData = { baseOpacity: 0.9 };
+        const star = new THREE.Mesh(starGeo, starMat);
+        star.position.set(x, y, z);
+        star.userData = { originalPos: new THREE.Vector3(x, y, z), index: i };
+        group.add(star);
+        stars.push(star);
     }
 
-    // Golden ratio particles following spiral path
-    const particleCount = 600;
-    const particlePositions = new Float32Array(particleCount * 3);
-    const particleColors = new Float32Array(particleCount * 3);
+    // Connecting lines between nearby stars
+    const connections = [];
+    const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.15
+    });
+    lineMaterial.userData = { baseOpacity: 0.15 };
 
-    for (let i = 0; i < particleCount; i++) {
-        const t = i / particleCount;
-        const angle = t * Math.PI * 16;
-        const radius = Math.pow(phi, (angle / (Math.PI * 2))) * 0.15 + Math.random() * 2;
-
-        particlePositions[i * 3] = Math.cos(angle) * radius + (Math.random() - 0.5) * 2;
-        particlePositions[i * 3 + 1] = Math.sin(angle) * radius + (Math.random() - 0.5) * 2;
-        particlePositions[i * 3 + 2] = (t - 0.5) * 10;
-
-        // Gold to white gradient
-        particleColors[i * 3] = 1;
-        particleColors[i * 3 + 1] = 0.8 + t * 0.2;
-        particleColors[i * 3 + 2] = t;
+    for (let i = 0; i < starPositions.length; i++) {
+        for (let j = i + 1; j < starPositions.length; j++) {
+            const dist = starPositions[i].distanceTo(starPositions[j]);
+            if (dist < 6) {
+                const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                    starPositions[i],
+                    starPositions[j]
+                ]);
+                const line = new THREE.Line(lineGeo, lineMaterial.clone());
+                line.material.opacity = 0.15 * (1 - dist / 6);
+                line.material.userData = { baseOpacity: 0.15 * (1 - dist / 6) };
+                group.add(line);
+                connections.push(line);
+            }
+        }
     }
 
-    const particleGeo = new THREE.BufferGeometry();
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+    // Ambient stardust particles
+    const dustCount = 800;
+    const dustPositions = new Float32Array(dustCount * 3);
+    const dustColors = new Float32Array(dustCount * 3);
 
-    const particleMat = new THREE.PointsMaterial({
-        size: 0.06,
+    for (let i = 0; i < dustCount; i++) {
+        dustPositions[i * 3] = (Math.random() - 0.5) * 30;
+        dustPositions[i * 3 + 1] = (Math.random() - 0.5) * 25;
+        dustPositions[i * 3 + 2] = (Math.random() - 0.5) * 20;
+
+        const brightness = 0.4 + Math.random() * 0.6;
+        dustColors[i * 3] = brightness;
+        dustColors[i * 3 + 1] = brightness;
+        dustColors[i * 3 + 2] = brightness;
+    }
+
+    const dustGeo = new THREE.BufferGeometry();
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+    dustGeo.setAttribute('color', new THREE.BufferAttribute(dustColors, 3));
+
+    const dustMat = new THREE.PointsMaterial({
+        size: 0.03,
         vertexColors: true,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.6,
         blending: THREE.AdditiveBlending
     });
-    particleMat.userData = { baseOpacity: 0.7 };
-    const goldenParticles = new THREE.Points(particleGeo, particleMat);
-    group.add(goldenParticles);
+    dustMat.userData = { baseOpacity: 0.6 };
+    const stardust = new THREE.Points(dustGeo, dustMat);
+    group.add(stardust);
 
-    // Central phi symbol (simplified as glowing sphere)
-    const phiGeo = new THREE.SphereGeometry(0.8, 32, 32);
-    const phiMat = new THREE.MeshBasicMaterial({
-        color: 0xffcc00,
+    // Central glow
+    const glowGeo = new THREE.SphereGeometry(1.5, 32, 32);
+    const glowMat = new THREE.MeshBasicMaterial({
+        color: 0xff3c00,
         transparent: true,
-        opacity: 0.5
+        opacity: 0.1
     });
-    phiMat.userData = { baseOpacity: 0.5 };
-    const phiCore = new THREE.Mesh(phiGeo, phiMat);
-    group.add(phiCore);
+    glowMat.userData = { baseOpacity: 0.1 };
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    group.add(glow);
 
-    return { group, spiral, rectangles, goldenParticles, phiCore };
+    return { group, stars, connections, stardust, glow };
 }
 
 export function updateGoldenSpiral(data, mouse, time) {
-    const { spiral, rectangles, goldenParticles, phiCore } = data;
+    const { stars, stardust, glow } = data;
 
-    // Slow elegant rotation
-    spiral.rotation.z = time * 0.08 + mouse.x * 0.2;
-    spiral.rotation.x = mouse.y * 0.1;
+    // Subtle star pulsing
+    stars.forEach((star) => {
+        const pulse = 1 + Math.sin(time * 2 + star.userData.index * 0.5) * 0.2;
+        star.scale.setScalar(pulse);
 
-    // Animate rectangles - subtle rotation
-    rectangles.forEach((rect) => {
-        rect.rotation.z = time * 0.02 * (rect.userData.index % 2 ? 1 : -1);
-        rect.material.opacity = rect.material.userData.baseOpacity * (0.8 + Math.sin(time + rect.userData.index) * 0.2);
+        // Gentle floating motion
+        const orig = star.userData.originalPos;
+        star.position.x = orig.x + Math.sin(time + star.userData.index) * 0.1;
+        star.position.y = orig.y + Math.cos(time * 0.7 + star.userData.index) * 0.1;
     });
 
-    // Particles follow spiral motion
-    goldenParticles.rotation.z = time * 0.03 + mouse.x * 0.1;
+    // Stardust rotation
+    stardust.rotation.y = time * 0.02 + mouse.x * 0.1;
+    stardust.rotation.x = mouse.y * 0.05;
 
-    // Pulsing phi core
-    phiCore.scale.setScalar(1 + Math.sin(time * 2) * 0.15);
-    phiCore.rotation.y = time * 0.2;
+    // Glow breathing
+    glow.scale.setScalar(1.5 + Math.sin(time) * 0.3);
+    glow.rotation.y = time * 0.1;
 }

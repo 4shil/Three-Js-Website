@@ -1,218 +1,194 @@
 import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-gsap.registerPlugin(ScrollTrigger);
+// Scene positions - precomputed constant
+const SCENE_POSITIONS = [0, -25, -50, -75, -100, -125, -150, -175, -200, -225, -250, -275, -300, -325];
+const TOTAL_SCENES = 14;
 
-// Scene positions (z-axis depth for each scene)
-const SCENE_POSITIONS = [
-    0,      // Scene 1: Nebula
-    -25,    // Scene 2: Crystal
-    -50,    // Scene 3: Grid
-    -75,    // Scene 4: Void
-    -100,   // Scene 5: Aurora
-    -125,   // Scene 6: Solar
-    -150,   // Scene 7: Quantum
-    -175,   // Scene 8: Fractal
-    -200,   // Scene 9: Neural
-    -225,   // Scene 10: Mirror
-    -250,   // Scene 11: Storm
-    -275,   // Scene 12: Spiral
-    -300,   // Scene 13: Warp
-    -325    // Scene 14: Genesis
-];
+// Cached DOM references
+let sections = null;
+let progressBar = null;
+let dots = null;
+let scrollCue = null;
 
 export function createScrollAnimations(camera, sceneGroups, lenis) {
-    const totalScenes = sceneGroups.length;
-    let currentSceneIndex = 0;
-    let isScrolling = false;
-    let scrollTimeout = null;
+    let currentScene = 0;
+    let isTransitioning = false;
 
-    // Initialize: All scenes hidden except first
-    sceneGroups.forEach((group, i) => {
-        group.visible = (i === 0);
-        setGroupOpacity(group, i === 0 ? 1 : 0);
-    });
+    // Cache DOM queries once
+    sections = document.querySelectorAll('section');
+    progressBar = document.querySelector('.progress-bar');
+    dots = document.querySelectorAll('.scene-dot');
+    scrollCue = document.querySelector('.scroll-cue');
 
-    // Get all sections
-    const sections = document.querySelectorAll('section');
-
-    // DISCRETE SCROLL NAVIGATION
-    // Each scroll action moves exactly one scene
-    function handleWheel(e) {
-        if (isScrolling) {
-            e.preventDefault();
-            return;
-        }
-
-        const direction = e.deltaY > 0 ? 1 : -1;
-        const newIndex = Math.max(0, Math.min(totalScenes - 1, currentSceneIndex + direction));
-
-        if (newIndex !== currentSceneIndex) {
-            e.preventDefault();
-            goToScene(newIndex);
-        }
+    // Initialize scenes - only first visible
+    for (let i = 0; i < sceneGroups.length; i++) {
+        sceneGroups[i].visible = i === 0;
+        if (i === 0) setOpacity(sceneGroups[i], 1);
     }
 
-    // Navigate to specific scene
-    function goToScene(newIndex) {
-        if (newIndex === currentSceneIndex || isScrolling) return;
-        if (newIndex < 0 || newIndex >= totalScenes) return;
+    // Show first card immediately
+    const firstContent = sections[0]?.querySelector('.content');
+    if (firstContent) firstContent.classList.add('visible');
+    setActiveDot(0);
 
-        isScrolling = true;
+    // Disable Lenis
+    if (lenis) lenis.stop();
 
-        const oldScene = sceneGroups[currentSceneIndex];
-        const newScene = sceneGroups[newIndex];
+    // FAST TRANSITIONS
+    function goToScene(idx) {
+        if (idx === currentScene || isTransitioning || idx < 0 || idx >= TOTAL_SCENES) return;
+        isTransitioning = true;
 
-        // Instant hide old scene
-        if (oldScene) {
-            oldScene.visible = false;
-            setGroupOpacity(oldScene, 0);
+        const oldScene = sceneGroups[currentScene];
+        const newScene = sceneGroups[idx];
+        const oldCard = sections[currentScene]?.querySelector('.content');
+        const newCard = sections[idx]?.querySelector('.content');
+
+        // Quick fade out old card
+        if (oldCard) {
+            gsap.to(oldCard, {
+                opacity: 0, y: -20,
+                duration: 0.25,
+                ease: 'power2.in',
+                onComplete: () => oldCard.classList.remove('visible')
+            });
         }
+
+        // Quick scene crossfade
+        if (oldScene) {
+            gsap.to({ v: 1 }, {
+                v: 0, duration: 0.4,
+                onUpdate: function () { setOpacity(oldScene, this.targets()[0].v); },
+                onComplete: () => { oldScene.visible = false; }
+            });
+        }
+
+        // Camera move
+        gsap.to(camera.position, {
+            z: SCENE_POSITIONS[idx] + 10,
+            duration: 0.6,
+            ease: 'power3.inOut'
+        });
 
         // Show new scene
         if (newScene) {
             newScene.visible = true;
-            setGroupOpacity(newScene, 1);
+            gsap.fromTo({ v: 0 }, { v: 0 }, {
+                v: 1, duration: 0.4, delay: 0.15,
+                onUpdate: function () { setOpacity(newScene, this.targets()[0].v); }
+            });
         }
 
-        // Snap camera to new position
-        gsap.to(camera.position, {
-            z: SCENE_POSITIONS[newIndex] + 10,
-            duration: 0.5,
-            ease: 'power2.out',
-            onComplete: () => {
-                isScrolling = false;
-            }
-        });
-
-        // Scroll DOM to section
-        if (sections[newIndex] && lenis) {
-            lenis.scrollTo(sections[newIndex], { immediate: true });
+        // Quick fade in new card
+        if (newCard) {
+            newCard.classList.add('visible');
+            gsap.fromTo(newCard,
+                { opacity: 0, y: 20 },
+                {
+                    opacity: 1, y: 0, duration: 0.35, delay: 0.2, ease: 'power2.out',
+                    onComplete: () => { isTransitioning = false; }
+                }
+            );
+        } else {
+            setTimeout(() => { isTransitioning = false; }, 500);
         }
 
-        // Update content visibility
-        sections.forEach((section, i) => {
-            const content = section.querySelector('.content');
-            if (content) {
-                content.classList.toggle('visible', i === newIndex);
-            }
-        });
+        // DOM scroll
+        sections[idx]?.scrollIntoView({ behavior: 'instant' });
 
-        // Update dots
-        updateActiveDot(newIndex);
-
-        currentSceneIndex = newIndex;
+        setActiveDot(idx);
+        setProgress(idx);
+        currentScene = idx;
     }
 
-    // Disable Lenis smooth scroll and use discrete navigation
-    if (lenis) {
-        lenis.stop();
-    }
+    // Wheel handler - throttled
+    let lastWheel = 0;
+    function onWheel(e) {
+        const now = performance.now();
+        if (isTransitioning || now - lastWheel < 600) { e.preventDefault(); return; }
 
-    // Add wheel listener for discrete scrolling
-    window.addEventListener('wheel', handleWheel, { passive: false });
+        const dir = e.deltaY > 0 ? 1 : -1;
+        const next = currentScene + dir;
 
-    // Touch support for discrete navigation
-    let touchStartY = 0;
-    window.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-
-    window.addEventListener('touchend', (e) => {
-        const touchEndY = e.changedTouches[0].clientY;
-        const diff = touchStartY - touchEndY;
-
-        if (Math.abs(diff) > 50) { // Minimum swipe distance
-            const direction = diff > 0 ? 1 : -1;
-            goToScene(currentSceneIndex + direction);
-        }
-    }, { passive: true });
-
-    // Keyboard navigation
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+        if (next >= 0 && next < TOTAL_SCENES) {
             e.preventDefault();
-            goToScene(currentSceneIndex + 1);
-        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-            e.preventDefault();
-            goToScene(currentSceneIndex - 1);
-        } else if (e.key === 'Home') {
-            e.preventDefault();
-            goToScene(0);
-        } else if (e.key === 'End') {
-            e.preventDefault();
-            goToScene(totalScenes - 1);
-        }
-    });
-
-    // Progress bar
-    const progressBar = document.querySelector('.progress-bar');
-
-    function updateProgress() {
-        if (progressBar) {
-            const progress = currentSceneIndex / (totalScenes - 1);
-            gsap.to(progressBar, { scaleX: progress, duration: 0.3 });
+            lastWheel = now;
+            goToScene(next);
         }
     }
 
-    // Scene indicator dots
-    function updateActiveDot(activeIndex) {
-        const dots = document.querySelectorAll('.scene-dot');
-        dots.forEach((dot, i) => {
-            dot.classList.toggle('active', i === activeIndex);
-        });
-        updateProgress();
+    // Touch handler
+    let touchY = 0;
+    function onTouchStart(e) { touchY = e.touches[0].clientY; }
+    function onTouchEnd(e) {
+        if (isTransitioning) return;
+        const diff = touchY - e.changedTouches[0].clientY;
+        if (Math.abs(diff) > 60) goToScene(currentScene + (diff > 0 ? 1 : -1));
     }
 
-    // Initial content visibility
-    const firstContent = sections[0]?.querySelector('.content');
-    if (firstContent) {
-        firstContent.classList.add('visible');
+    // Keyboard handler
+    function onKey(e) {
+        if (isTransitioning) return;
+        const keyMap = { ArrowDown: 1, PageDown: 1, ' ': 1, ArrowUp: -1, PageUp: -1 };
+        if (keyMap[e.key] !== undefined) {
+            e.preventDefault();
+            goToScene(currentScene + keyMap[e.key]);
+        } else if (e.key === 'Home') { e.preventDefault(); goToScene(0); }
+        else if (e.key === 'End') { e.preventDefault(); goToScene(TOTAL_SCENES - 1); }
     }
-    updateActiveDot(0);
 
-    // Hide scroll cue after first navigation
-    const scrollCue = document.querySelector('.scroll-cue');
+    // Event listeners
+    window.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('keydown', onKey);
+
+    // Hide scroll cue on first interaction
     if (scrollCue) {
         window.addEventListener('wheel', () => {
             gsap.to(scrollCue, { opacity: 0, duration: 0.3 });
         }, { once: true });
     }
 
-    // Expose goToScene for dot navigation
+    // Expose for dots
     window.voyageGoToScene = goToScene;
 }
 
-// Helper: Set opacity for all materials in a group
-function setGroupOpacity(group, opacity) {
-    group.traverse((child) => {
+// Optimized opacity setter - minimal traversal
+function setOpacity(group, opacity) {
+    const children = group.children;
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
         if (child.material) {
-            if (Array.isArray(child.material)) {
-                child.material.forEach(mat => {
-                    mat.transparent = true;
-                    mat.opacity = mat.userData?.baseOpacity !== undefined
-                        ? mat.userData.baseOpacity * opacity
-                        : opacity;
-                });
-            } else {
-                child.material.transparent = true;
-                child.material.opacity = child.material.userData?.baseOpacity !== undefined
-                    ? child.material.userData.baseOpacity * opacity
-                    : opacity;
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            for (let j = 0; j < mats.length; j++) {
+                mats[j].transparent = true;
+                mats[j].opacity = (mats[j].userData?.baseOpacity ?? 1) * opacity;
             }
         }
-    });
+        if (child.children?.length) setOpacity(child, opacity);
+    }
 }
 
-// Click navigation on dots
-export function setupDotNavigation() {
-    const dots = document.querySelectorAll('.scene-dot');
+// DOM updates - cached references
+function setActiveDot(idx) {
+    for (let i = 0; i < dots.length; i++) {
+        dots[i].classList.toggle('active', i === idx);
+    }
+}
 
-    dots.forEach((dot, i) => {
-        dot.addEventListener('click', () => {
-            if (window.voyageGoToScene) {
-                window.voyageGoToScene(i);
-            }
+function setProgress(idx) {
+    if (progressBar) {
+        gsap.to(progressBar, { scaleX: idx / (TOTAL_SCENES - 1), duration: 0.4 });
+    }
+}
+
+// Dot navigation
+export function setupDotNavigation() {
+    const allDots = document.querySelectorAll('.scene-dot');
+    for (let i = 0; i < allDots.length; i++) {
+        allDots[i].addEventListener('click', () => {
+            if (window.voyageGoToScene) window.voyageGoToScene(i);
         });
-    });
+    }
 }

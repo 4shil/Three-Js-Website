@@ -78,10 +78,10 @@ export const SCENES = [
         layout: 'left'
     },
     {
-        id: 'spiral',
-        title: 'GOLDEN<br>SPIRAL',
-        description: 'PHI RATIO DETECTED. MATHEMATICAL BLUEPRINT OF EXISTENCE LOCATED.',
-        button: 'FOLLOW',
+        id: 'constellation',
+        title: 'STELLAR<br>CONSTELLATION',
+        description: 'STAR MAP INITIALIZED. NODES CONNECTED. ANCIENT NAVIGATION CHART.',
+        button: 'TRACE',
         layout: 'right'
     },
     {
@@ -107,7 +107,7 @@ export function createSections() {
                 <span class="scene-number">SCENE_${String(index + 1).padStart(2, '0')} // ${scene.id.toUpperCase()}</span>
                 <h1>${scene.title}</h1>
                 <p>${scene.description}</p>
-                <div class="btn" data-action="${scene.id}">${scene.button}</div>
+                <div class="accent-line"></div>
             </div>
         </section>
     `).join('');

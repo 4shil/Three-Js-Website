@@ -168,7 +168,64 @@ body::before {
     position: fixed;
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    opacity: 0.03;
+    opacity: 0.02;
     pointer-events: none;
     z-index: 9999;
+    mix-blend-mode: overlay;
+}
+
+/* Cinematic vignette */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center,
+            transparent 0%,
+            transparent 50%,
+            rgba(0, 0, 0, 0.3) 80%,
+            rgba(0, 0, 0, 0.6) 100%);
+    pointer-events: none;
+    z-index: 9998;
+}
+
+/* Premium gradient accent glow */
+#webgl::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40vh;
+    background: linear-gradient(to top,
+            rgba(255, 60, 0, 0.05) 0%,
+            transparent 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Ambient light leak */
+.ambient-glow {
+    position: fixed;
+    width: 60vw;
+    height: 60vh;
+    background: radial-gradient(circle,
+            rgba(255, 60, 0, 0.08) 0%,
+            transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+    filter: blur(100px);
+    opacity: 0.6;
+    animation: float-glow 15s ease-in-out infinite;
+}
+
+@keyframes float-glow {
+
+    0%,
+    100% {
+        transform: translate(-30%, -30%) scale(1);
+    }
+
+    50% {
+        transform: translate(-20%, -40%) scale(1.2);
+    }
 }

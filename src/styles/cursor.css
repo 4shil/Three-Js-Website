@@ -1,0 +1,313 @@
+/* CUSTOM CURSOR */
+.cursor {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: difference;
+}
+
+.cursor-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--brutal-white);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    transition: transform 0.1s ease, opacity 0.3s ease;
+}
+
+.cursor-ring {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--brutal-accent);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.15s ease-out, width 0.2s ease, height 0.2s ease, border-color 0.2s ease;
+    transform: translate(-50%, -50%);
+}
+
+/* Cursor states */
+.cursor-ring.hover {
+    width: 60px;
+    height: 60px;
+    border-color: var(--brutal-green);
+}
+
+.cursor-ring.click {
+    transform: translate(-50%, -50%) scale(0.8);
+}
+
+.cursor-ring.hidden {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+}
+
+/* Hide default cursor */
+body {
+    cursor: none !important;
+}
+
+a,
+button,
+.btn,
+.scene-dot,
+[data-hover] {
+    cursor: none !important;
+}
+
+/* MICRO-ANIMATIONS */
+
+/* Smooth all transitions */
+* {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Button micro-animations */
+.btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn::before {
+    content: '[ ';
+    transition: transform 0.2s ease;
+}
+
+.btn::after {
+    content: ' ]';
+    transition: transform 0.2s ease;
+}
+
+.btn:hover::before {
+    transform: translateX(-2px);
+}
+
+.btn:hover::after {
+    transform: translateX(2px);
+}
+
+/* Ripple effect on buttons */
+.btn-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 60, 0, 0.4);
+    transform: scale(0);
+    animation: ripple 0.6s ease-out;
+    pointer-events: none;
+}
+
+@keyframes ripple {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* Content card micro-animations */
+.content {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.content:hover {
+    transform: translateX(5px);
+    border-color: var(--brutal-accent);
+}
+
+.content h1 {
+    transition: all 0.3s ease;
+}
+
+.content:hover h1 {
+    letter-spacing: 0.02em;
+}
+
+.content p {
+    transition: all 0.3s ease 0.1s;
+}
+
+.content:hover p {
+    color: rgba(245, 245, 245, 0.9);
+}
+
+/* Scene number animation */
+.scene-number {
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.content:hover .scene-number {
+    letter-spacing: 0.4em;
+    color: var(--brutal-green);
+}
+
+/* Scene indicator dots */
+.scene-dot {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scene-dot:hover {
+    transform: scale(1.3);
+    border-color: var(--brutal-green);
+}
+
+.scene-dot.active {
+    animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 60, 0, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 8px rgba(255, 60, 0, 0);
+    }
+}
+
+/* Navigation link animations */
+.nav-link {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--brutal-accent);
+    transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+    width: 100%;
+}
+
+/* Corner markers animation */
+.content::before,
+.content::after {
+    transition: all 0.3s ease;
+}
+
+.content:hover::before {
+    transform: translate(-3px, -3px);
+    color: var(--brutal-green);
+}
+
+.content:hover::after {
+    transform: translate(3px, 3px);
+    color: var(--brutal-green);
+}
+
+/* Progress bar glow */
+.progress-bar {
+    transition: all 0.4s ease;
+    box-shadow: 0 0 10px rgba(255, 60, 0, 0.3);
+}
+
+/* Scroll cue bounce */
+.scroll-cue {
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-10px);
+    }
+
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Loader text animation */
+.loader-text {
+    animation: flicker 0.5s infinite alternate;
+}
+
+@keyframes flicker {
+    0% {
+        opacity: 0.8;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Stagger animation for initial load */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.content.visible h1 {
+    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.content.visible p {
+    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards;
+}
+
+.content.visible .btn {
+    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+}
+
+/* Magnetic hover effect for interactive elements */
+[data-magnetic] {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth text selection */
+::selection {
+    background: var(--brutal-accent);
+    color: var(--brutal-black);
+}
+
+/* Focus states */
+:focus-visible {
+    outline: 2px solid var(--brutal-green);
+    outline-offset: 4px;
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--brutal-black);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--brutal-accent);
+    border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--brutal-green);
+}

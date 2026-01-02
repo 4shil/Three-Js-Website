@@ -7,6 +7,7 @@ import './styles/navigation.css';
 import './styles/loader.css';
 import './styles/sections.css';
 import './styles/utilities.css';
+import './styles/cursor.css';
 
 // Three.js core
 import { createScene, createRenderer, createCamera, handleResize } from './three/SceneManager.js';
@@ -37,6 +38,7 @@ import { hideLoader } from './components/Loader.js';
 import { createScrollAnimations, setupDotNavigation } from './animation/ScrollAnimations.js';
 import { createAnimationLoop } from './animation/AnimationLoop.js';
 import { createMouseHandler } from './interaction/MouseHandler.js';
+import { initCustomCursor, initTextScramble, initTiltEffect } from './interaction/CustomCursor.js';
 
 // Initialize application
 function init() {
@@ -142,6 +144,11 @@ function init() {
 
   // Hide loader when ready
   hideLoader();
+
+  // Initialize custom cursor and micro-animations
+  initCustomCursor();
+  initTextScramble();
+  initTiltEffect();
 }
 
 // Start when DOM is ready
