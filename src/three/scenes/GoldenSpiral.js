@@ -1,89 +1,88 @@
 import * as THREE from 'three';
 
-// Scene 12: Golden Spiral
+// SCENE 12: GOLDEN SPIRAL - Fibonacci Geometry
+// Awwwards-style: Elegant mathematical visualization
+
 export function createGoldenSpiral() {
     const group = new THREE.Group();
-    group.position.set(0, 0, -275);
+    group.position.z = -275;
 
     // Golden spiral curve
     const spiralPoints = [];
     const phi = (1 + Math.sqrt(5)) / 2; // Golden ratio
 
-    for (let t = 0; t < 20; t += 0.05) {
-        const r = Math.pow(phi, t / (2 * Math.PI)) * 0.5;
+    for (let i = 0; i < 200; i++) {
+        const angle = i * 0.1;
+        const radius = Math.pow(phi, angle / (Math.PI * 2)) * 0.3;
         spiralPoints.push(new THREE.Vector3(
-            Math.cos(t) * r,
-            Math.sin(t) * r,
-            t * 0.1 - 1
+            Math.cos(angle) * radius,
+            Math.sin(angle) * radius,
+            0
         ));
     }
 
     const spiralCurve = new THREE.CatmullRomCurve3(spiralPoints);
-    const spiralGeo = new THREE.TubeGeometry(spiralCurve, 200, 0.1, 8, false);
+    const spiralGeo = new THREE.TubeGeometry(spiralCurve, 200, 0.08, 8, false);
     const spiralMat = new THREE.MeshBasicMaterial({
-        color: 0xffd700,
+        color: 0xffcc00,
         transparent: true,
-        opacity: 0.7,
-        wireframe: true
+        opacity: 0.6
     });
-
+    spiralMat.userData = { baseOpacity: 0.6 };
     const spiral = new THREE.Mesh(spiralGeo, spiralMat);
     group.add(spiral);
 
-    // Fibonacci squares
+    // Fibonacci squares (simplified as rings)
     const squares = [];
-    const fibNums = [1, 1, 2, 3, 5, 8, 13];
+    const fibSizes = [1, 1, 2, 3, 5, 8];
     let posX = 0, posY = 0;
 
-    fibNums.forEach((num, i) => {
-        const squareGeo = new THREE.PlaneGeometry(num * 0.5, num * 0.5);
+    for (let i = 0; i < fibSizes.length; i++) {
+        const size = fibSizes[i] * 0.5;
+        const squareGeo = new THREE.RingGeometry(size, size + 0.05, 4);
         const squareMat = new THREE.MeshBasicMaterial({
-            color: 0xffd700,
+            color: 0xffffff,
             transparent: true,
-            opacity: 0.15 - i * 0.015,
-            side: THREE.DoubleSide,
-            wireframe: true
+            opacity: 0.15,
+            side: THREE.DoubleSide
         });
-
+        squareMat.userData = { baseOpacity: 0.15 };
         const square = new THREE.Mesh(squareGeo, squareMat);
-        square.position.set(posX, posY, -1);
-        square.userData.index = i;
-        squares.push(square);
+        square.rotation.z = Math.PI / 4;
+        square.position.set(posX, posY, -i * 0.5);
+        square.userData = { index: i };
         group.add(square);
+        squares.push(square);
 
-        // Update position for next square
-        const directions = [[1, 0], [0, 1], [-1, 0], [0, -1]];
-        const dir = directions[i % 4];
-        posX += dir[0] * num * 0.25;
-        posY += dir[1] * num * 0.25;
-    });
-
-    // Golden particles
-    const goldenGeo = new THREE.BufferGeometry();
-    const goldenCount = 1200;
-    const goldenPos = new Float32Array(goldenCount * 3);
-
-    for (let i = 0; i < goldenCount; i++) {
-        const t = (i / goldenCount) * 20;
-        const r = Math.pow(phi, t / (2 * Math.PI)) * 0.5;
-        const offset = (Math.random() - 0.5) * 2;
-
-        goldenPos[i * 3] = Math.cos(t) * r + offset;
-        goldenPos[i * 3 + 1] = Math.sin(t) * r + offset;
-        goldenPos[i * 3 + 2] = t * 0.1 - 1 + (Math.random() - 0.5);
+        // Fibonacci positioning
+        posX += size * (i % 2 ? 1 : -1);
+        posY += size * (i % 2 ? -1 : 1);
     }
 
-    goldenGeo.setAttribute('position', new THREE.BufferAttribute(goldenPos, 3));
+    // Golden particles
+    const particleCount = 400;
+    const particlePositions = new Float32Array(particleCount * 3);
 
-    const goldenMat = new THREE.PointsMaterial({
+    for (let i = 0; i < particleCount; i++) {
+        const angle = (i / particleCount) * Math.PI * 10;
+        const radius = 1 + (i / particleCount) * 12;
+        particlePositions[i * 3] = Math.cos(angle) * radius;
+        particlePositions[i * 3 + 1] = Math.sin(angle) * radius;
+        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 5;
+    }
+
+    const particleGeo = new THREE.BufferGeometry();
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+
+    const particleMat = new THREE.PointsMaterial({
         size: 0.06,
-        color: 0xffd700,
+        color: 0xffcc00,
         transparent: true,
-        opacity: 0.8,
+        opacity: 0.6,
         blending: THREE.AdditiveBlending
     });
-
-    const goldenParticles = new THREE.Points(goldenGeo, goldenMat);
+    particleMat.userData = { baseOpacity: 0.6 };
+    const goldenParticles = new THREE.Points(particleGeo, particleMat);
     group.add(goldenParticles);
 
     return { group, spiral, squares, goldenParticles };
@@ -92,18 +91,11 @@ export function createGoldenSpiral() {
 export function updateGoldenSpiral(data, mouse, time) {
     const { spiral, squares, goldenParticles } = data;
 
-    spiral.rotation.z = time * 0.1 + mouse.x * 0.5;
-    spiral.rotation.x = mouse.y * 0.3;
+    spiral.rotation.z = time * 0.1 + mouse.x * 0.3;
 
     squares.forEach((square) => {
-        square.rotation.z = time * 0.05 * (square.userData.index % 2 ? 1 : -1) + mouse.x * 0.2;
-        square.material.opacity = 0.1 + Math.sin(time + square.userData.index) * 0.05;
-
-        // React to mouse
-        const scale = 1 + mouse.y * 0.1 * (square.userData.index % 3 - 1);
-        square.scale.setScalar(scale);
+        square.rotation.z = Math.PI / 4 + time * 0.05 * (square.userData.index % 2 ? 1 : -1);
     });
 
-    goldenParticles.rotation.z = time * 0.08 - mouse.x * 0.2;
-    goldenParticles.rotation.y = mouse.y * 0.2;
+    goldenParticles.rotation.z = time * 0.05 + mouse.x * 0.1;
 }

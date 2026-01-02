@@ -29,15 +29,22 @@ export function createScrollAnimations(camera, sceneGroups, lenis) {
 
     const totalScenes = sceneGroups.length;
 
-    // STRICT ONE-SCENE-AT-A-TIME: Hide all scenes except first
+    // Initialize: All scenes visible but faded out except first
     sceneGroups.forEach((group, i) => {
-        group.visible = (i === 0);
+        if (i === 0) {
+            group.visible = true;
+            setGroupOpacity(group, 1);
+        } else {
+            group.visible = true;
+            setGroupOpacity(group, 0);
+        }
     });
 
-    // Track current scene for visibility toggling
+    // Track current scene
     let currentSceneIndex = 0;
+    let isTransitioning = false;
 
-    // Create ScrollTrigger for each scene to toggle visibility
+    // Create ScrollTrigger for each section
     const sections = document.querySelectorAll('section');
 
     sections.forEach((section, i) => {
@@ -45,30 +52,53 @@ export function createScrollAnimations(camera, sceneGroups, lenis) {
             trigger: section,
             start: 'top center',
             end: 'bottom center',
-            onEnter: () => switchScene(i),
-            onEnterBack: () => switchScene(i)
+            onEnter: () => transitionToScene(i),
+            onEnterBack: () => transitionToScene(i)
         });
     });
 
-    function switchScene(newIndex) {
-        if (newIndex === currentSceneIndex) return;
+    function transitionToScene(newIndex) {
+        if (newIndex === currentSceneIndex || isTransitioning) return;
+        isTransitioning = true;
 
-        // Hide current scene
-        if (sceneGroups[currentSceneIndex]) {
-            sceneGroups[currentSceneIndex].visible = false;
-        }
+        const oldScene = sceneGroups[currentSceneIndex];
+        const newScene = sceneGroups[newIndex];
 
-        // Show new scene
-        if (sceneGroups[newIndex]) {
-            sceneGroups[newIndex].visible = true;
-        }
-
-        // Move camera to new scene position
-        gsap.to(camera.position, {
-            z: SCENE_POSITIONS[newIndex] + 10,
-            duration: 0.8,
-            ease: 'power2.inOut'
+        // Ultra-smooth crossfade transition
+        const tl = gsap.timeline({
+            onComplete: () => {
+                isTransitioning = false;
+            }
         });
+
+        // Fade out current scene - longer duration for smoothness
+        if (oldScene) {
+            tl.to({}, {
+                duration: 1.2,
+                onUpdate: function () {
+                    setGroupOpacity(oldScene, 1 - this.progress());
+                },
+                ease: 'power2.out'
+            }, 0);
+        }
+
+        // Fade in new scene - overlapping for seamless crossfade
+        if (newScene) {
+            tl.to({}, {
+                duration: 1.2,
+                onUpdate: function () {
+                    setGroupOpacity(newScene, this.progress());
+                },
+                ease: 'power2.in'
+            }, 0.4); // Greater overlap for smoother blend
+        }
+
+        // Smooth camera movement - matches Lenis timing
+        tl.to(camera.position, {
+            z: SCENE_POSITIONS[newIndex] + 10,
+            duration: 1.6,
+            ease: 'power4.inOut' // Ultra smooth ease
+        }, 0);
 
         currentSceneIndex = newIndex;
     }
@@ -124,8 +154,27 @@ export function createScrollAnimations(camera, sceneGroups, lenis) {
             onEnter: () => gsap.to(scrollCue, { opacity: 0, duration: 0.5 })
         });
     }
+}
 
-    return tl;
+// Helper: Set opacity for all materials in a group
+function setGroupOpacity(group, opacity) {
+    group.traverse((child) => {
+        if (child.material) {
+            if (Array.isArray(child.material)) {
+                child.material.forEach(mat => {
+                    mat.transparent = true;
+                    mat.opacity = mat.userData?.baseOpacity !== undefined
+                        ? mat.userData.baseOpacity * opacity
+                        : opacity;
+                });
+            } else {
+                child.material.transparent = true;
+                child.material.opacity = child.material.userData?.baseOpacity !== undefined
+                    ? child.material.userData.baseOpacity * opacity
+                    : opacity;
+            }
+        }
+    });
 }
 
 function updateActiveDot(dots, activeIndex) {
@@ -134,7 +183,7 @@ function updateActiveDot(dots, activeIndex) {
     });
 }
 
-// Optional: Click navigation on dots
+// Click navigation on dots
 export function setupDotNavigation() {
     const dots = document.querySelectorAll('.scene-dot');
     const sections = document.querySelectorAll('section');

@@ -47,13 +47,17 @@ function init() {
     return;
   }
 
-  // Initialize Lenis Smooth Scroll
+  // Initialize Lenis Smooth Scroll - Ultra Smooth Configuration
   const lenis = new Lenis({
-    duration: 1.2,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    smooth: true,
-    direction: 'vertical',
-    smoothTouch: false
+    duration: 1.8, // Longer duration = smoother feel
+    easing: (t) => 1 - Math.pow(1 - t, 4), // Quartic ease-out for cinematic feel
+    orientation: 'vertical',
+    gestureOrientation: 'vertical',
+    smoothWheel: true,
+    wheelMultiplier: 0.8, // Slower wheel = more controlled
+    touchMultiplier: 1.5,
+    infinite: false,
+    autoResize: true
   });
 
   // Create Three.js fundamentals

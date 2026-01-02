@@ -1,92 +1,82 @@
 import * as THREE from 'three';
 
-// Scene 3: Digital Grid Terrain
+// SCENE 3: DIGITAL TERRAIN - Minimal Grid Landscape
+// Awwwards-style: Clean lines, subtle animations
+
 export function createGridTerrain() {
     const group = new THREE.Group();
-    group.position.set(0, -3, -50);
+    group.position.z = -50;
 
-    // Main grid
-    const gridHelper = new THREE.GridHelper(80, 80, 0x00ff00, 0x0a2a0a);
-    gridHelper.position.y = 0;
+    // Primary grid
+    const gridHelper = new THREE.GridHelper(40, 40, 0x00ff88, 0x1a1a1a);
+    gridHelper.position.y = -3;
+    gridHelper.material.transparent = true;
+    gridHelper.material.opacity = 0.4;
+    gridHelper.material.userData = { baseOpacity: 0.4 };
     group.add(gridHelper);
 
-    // Secondary grid (finer)
-    const gridHelper2 = new THREE.GridHelper(80, 160, 0x00ff00, 0x051505);
-    gridHelper2.position.y = 0.01;
-    gridHelper2.material.opacity = 0.3;
-    gridHelper2.material.transparent = true;
-    group.add(gridHelper2);
+    // Floating line pillars
+    const pillars = [];
+    for (let i = 0; i < 20; i++) {
+        const height = 2 + Math.random() * 6;
+        const pillarGeo = new THREE.BoxGeometry(0.1, height, 0.1);
+        const pillarMat = new THREE.MeshBasicMaterial({
+            color: i % 3 === 0 ? 0xff3c00 : 0xffffff,
+            transparent: true,
+            opacity: 0.6
+        });
+        pillarMat.userData = { baseOpacity: 0.6 };
+        const pillar = new THREE.Mesh(pillarGeo, pillarMat);
 
-    // Mountains
-    const mountains = [];
-    const mtnGeo = new THREE.ConeGeometry(1, 4, 4);
-    const mtnMat = new THREE.MeshBasicMaterial({
-        color: 0x00ff00,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.6
-    });
+        pillar.position.x = (Math.random() - 0.5) * 30;
+        pillar.position.y = height / 2 - 3;
+        pillar.position.z = (Math.random() - 0.5) * 20 - 5;
+        pillar.userData = { baseY: pillar.position.y, speed: 0.5 + Math.random() };
 
-    for (let i = 0; i < 30; i++) {
-        const mtn = new THREE.Mesh(mtnGeo, mtnMat.clone());
-        mtn.position.set(
-            (Math.random() - 0.5) * 60,
-            2,
-            (Math.random() - 0.5) * 60
-        );
-        mtn.scale.setScalar(Math.random() * 2.5 + 1);
-        mtn.userData.offset = Math.random() * Math.PI * 2;
-        mountains.push(mtn);
-        group.add(mtn);
+        group.add(pillar);
+        pillars.push(pillar);
     }
 
-    // Floating data cubes
-    const cubes = [];
-    const cubeGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-    const cubeMat = new THREE.MeshBasicMaterial({
+    // Floating particles
+    const particleCount = 500;
+    const particlePositions = new Float32Array(particleCount * 3);
+
+    for (let i = 0; i < particleCount; i++) {
+        particlePositions[i * 3] = (Math.random() - 0.5) * 40;
+        particlePositions[i * 3 + 1] = Math.random() * 10 - 3;
+        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 30 - 5;
+    }
+
+    const particleGeo = new THREE.BufferGeometry();
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+
+    const particleMat = new THREE.PointsMaterial({
+        size: 0.04,
         color: 0x00ff88,
-        wireframe: true
+        transparent: true,
+        opacity: 0.5,
+        blending: THREE.AdditiveBlending
     });
+    particleMat.userData = { baseOpacity: 0.5 };
+    const particles = new THREE.Points(particleGeo, particleMat);
+    group.add(particles);
 
-    for (let i = 0; i < 50; i++) {
-        const cube = new THREE.Mesh(cubeGeo, cubeMat.clone());
-        cube.position.set(
-            (Math.random() - 0.5) * 50,
-            Math.random() * 8 + 2,
-            (Math.random() - 0.5) * 50
-        );
-        cube.userData.offset = Math.random() * Math.PI * 2;
-        cube.userData.speed = Math.random() * 0.5 + 0.5;
-        cubes.push(cube);
-        group.add(cube);
-    }
-
-    return { group, gridHelper, mountains, cubes };
+    return { group, gridHelper, pillars, particles };
 }
 
 export function updateGridTerrain(data, mouse, time) {
-    const { gridHelper, mountains, cubes } = data;
+    const { gridHelper, pillars, particles } = data;
 
-    // Moving grid effect
-    gridHelper.position.z = (time * 3) % 2;
-    gridHelper.rotation.x = mouse.y * 0.1;
-    gridHelper.rotation.z = -mouse.x * 0.1;
+    // Subtle grid movement
+    gridHelper.rotation.y = mouse.x * 0.05;
 
-    // Animate mountains
-    mountains.forEach((mtn) => {
-        mtn.rotation.y += 0.008;
-        mtn.position.y = 2 + Math.sin(time + mtn.userData.offset) * 0.6;
-        // Subtle paralax
-        mtn.rotation.z = -mouse.x * 0.05;
+    // Animate pillars
+    pillars.forEach((pillar, i) => {
+        pillar.position.y = pillar.userData.baseY + Math.sin(time * pillar.userData.speed + i) * 0.5;
+        pillar.rotation.y = time * 0.2;
     });
 
-    // Animate cubes
-    cubes.forEach((cube) => {
-        cube.rotation.x += 0.02 * cube.userData.speed;
-        cube.rotation.y += 0.01 * cube.userData.speed;
-        cube.position.y = cube.position.y + Math.sin(time * cube.userData.speed + cube.userData.offset) * 0.01;
-
-        // Repel from mouse slightly
-        cube.position.x += mouse.x * 0.01 * cube.userData.speed;
-    });
+    // Float particles
+    particles.rotation.y = time * 0.02 + mouse.x * 0.05;
+    particles.position.y = Math.sin(time * 0.3) * 0.3;
 }

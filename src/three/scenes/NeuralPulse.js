@@ -1,80 +1,83 @@
 import * as THREE from 'three';
 
-// Scene 9: Neural Pulse
+// SCENE 9: NEURAL PULSE - Connected Network
+// Awwwards-style: Elegant nodes with glowing connections
+
 export function createNeuralPulse() {
     const group = new THREE.Group();
-    group.position.set(0, 0, -200);
+    group.position.z = -200;
 
-    // Neural nodes
+    // Create nodes
     const nodes = [];
-    const nodeGeo = new THREE.SphereGeometry(0.15, 8, 8);
-    const nodeMat = new THREE.MeshBasicMaterial({
-        color: 0x39ff14,
-        transparent: true,
-        opacity: 0.9
-    });
-
     const nodePositions = [];
-    for (let i = 0; i < 40; i++) {
-        const node = new THREE.Mesh(nodeGeo, nodeMat.clone());
-        node.position.set(
-            (Math.random() - 0.5) * 25,
+    for (let i = 0; i < 25; i++) {
+        const nodeGeo = new THREE.SphereGeometry(0.2 + Math.random() * 0.2, 16, 16);
+        const nodeMat = new THREE.MeshBasicMaterial({
+            color: i % 4 === 0 ? 0xff3c00 : 0x00ff88,
+            transparent: true,
+            opacity: 0.8
+        });
+        nodeMat.userData = { baseOpacity: 0.8 };
+        const node = new THREE.Mesh(nodeGeo, nodeMat);
+
+        const pos = new THREE.Vector3(
+            (Math.random() - 0.5) * 20,
             (Math.random() - 0.5) * 15,
-            (Math.random() - 0.5) * 15
+            (Math.random() - 0.5) * 10 - 5
         );
-        node.userData.pulseOffset = Math.random() * Math.PI * 2;
-        nodes.push(node);
-        nodePositions.push(node.position.clone());
+        node.position.copy(pos);
+        node.userData = { pulseOffset: Math.random() * Math.PI * 2 };
+
         group.add(node);
+        nodes.push(node);
+        nodePositions.push(pos);
     }
 
-    // Neural connections (lines between nodes)
+    // Create connections between nearby nodes
     const connections = [];
-    const lineMat = new THREE.LineBasicMaterial({
-        color: 0x39ff14,
+    const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0xffffff,
         transparent: true,
-        opacity: 0.3
+        opacity: 0.15
     });
+    lineMaterial.userData = { baseOpacity: 0.15 };
 
     for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
-            const dist = nodes[i].position.distanceTo(nodes[j].position);
+            const dist = nodePositions[i].distanceTo(nodePositions[j]);
             if (dist < 8) {
                 const lineGeo = new THREE.BufferGeometry().setFromPoints([
-                    nodes[i].position,
-                    nodes[j].position
+                    nodePositions[i], nodePositions[j]
                 ]);
-                const line = new THREE.Line(lineGeo, lineMat.clone());
-                line.userData.nodeA = i;
-                line.userData.nodeB = j;
-                connections.push(line);
+                const line = new THREE.Line(lineGeo, lineMaterial.clone());
                 group.add(line);
+                connections.push(line);
             }
         }
     }
 
-    // Pulse particles
-    const pulseGeo = new THREE.BufferGeometry();
-    const pulseCount = 500;
-    const pulsePos = new Float32Array(pulseCount * 3);
+    // Ambient particles
+    const particleCount = 400;
+    const particlePositions = new Float32Array(particleCount * 3);
 
-    for (let i = 0; i < pulseCount * 3; i += 3) {
-        pulsePos[i] = (Math.random() - 0.5) * 30;
-        pulsePos[i + 1] = (Math.random() - 0.5) * 20;
-        pulsePos[i + 2] = (Math.random() - 0.5) * 20;
+    for (let i = 0; i < particleCount; i++) {
+        particlePositions[i * 3] = (Math.random() - 0.5) * 30;
+        particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 20;
+        particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 15 - 5;
     }
 
-    pulseGeo.setAttribute('position', new THREE.BufferAttribute(pulsePos, 3));
+    const particleGeo = new THREE.BufferGeometry();
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
 
-    const pulseMat = new THREE.PointsMaterial({
-        size: 0.08,
-        color: 0x7fff00,
+    const particleMat = new THREE.PointsMaterial({
+        size: 0.03,
+        color: 0x8866ff,
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.4,
         blending: THREE.AdditiveBlending
     });
-
-    const pulseParticles = new THREE.Points(pulseGeo, pulseMat);
+    particleMat.userData = { baseOpacity: 0.4 };
+    const pulseParticles = new THREE.Points(particleGeo, particleMat);
     group.add(pulseParticles);
 
     return { group, nodes, connections, pulseParticles };
@@ -83,28 +86,16 @@ export function createNeuralPulse() {
 export function updateNeuralPulse(data, mouse, time) {
     const { nodes, connections, pulseParticles } = data;
 
-    // Pulse nodes
-    nodes.forEach((node, i) => {
-        const scale = 1 + Math.sin(time * 3 + node.userData.pulseOffset) * 0.4;
+    nodes.forEach((node) => {
+        const scale = 1 + Math.sin(time * 3 + node.userData.pulseOffset) * 0.3;
         node.scale.setScalar(scale);
-        node.material.opacity = 0.6 + Math.sin(time * 3 + node.userData.pulseOffset) * 0.3;
-
-        // Drift based on mouse
-        node.position.x += Math.sin(time + i) * 0.01 + mouse.x * 0.02;
-        node.position.y += Math.cos(time + i) * 0.01 + mouse.y * 0.02;
     });
 
-    // Update connections (re-draw lines if nodes move significantly? 
-    // Usually expensive, but here we just rotate the group or rely on visual abstractness)
-    // Instead we rotate the whole group slightly
-    data.group.rotation.y = mouse.x * 0.2;
-    data.group.rotation.x = -mouse.y * 0.2;
-
-    // Animate connection opacity
     connections.forEach((line, i) => {
-        line.material.opacity = 0.2 + Math.sin(time * 2 + i * 0.1) * 0.15;
+        line.material.opacity = line.material.userData.baseOpacity * (0.5 + Math.sin(time * 2 + i * 0.1) * 0.5);
     });
 
-    pulseParticles.rotation.y = time * 0.02 + mouse.x * 0.1;
-    pulseParticles.rotation.x = Math.sin(time * 0.5) * 0.1 - mouse.y * 0.1;
+    pulseParticles.rotation.y = time * 0.02 + mouse.x * 0.05;
+    data.group.rotation.y = mouse.x * 0.1;
+    data.group.rotation.x = mouse.y * 0.1;
 }

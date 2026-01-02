@@ -1,85 +1,99 @@
 import * as THREE from 'three';
 
-// Scene 4: Void Tunnel (Event Horizon)
+// SCENE 4: VOID TUNNEL - Abstract Depth
+// Awwwards-style: Minimal rings receding into infinity
+
 export function createVoidTunnel() {
     const group = new THREE.Group();
-    group.position.set(0, 0, -75);
+    group.position.z = -75;
 
-    // Main particle tunnel
-    const geometry = new THREE.BufferGeometry();
-    const count = 4000;
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-
-    for (let i = 0; i < count * 3; i += 3) {
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 3 + Math.random() * 10;
-
-        positions[i] = Math.cos(angle) * radius;
-        positions[i + 1] = Math.sin(angle) * radius;
-        positions[i + 2] = (Math.random() - 0.5) * 40;
-
-        // White to gray gradient
-        const brightness = 0.5 + Math.random() * 0.5;
-        colors[i] = brightness;
-        colors[i + 1] = brightness;
-        colors[i + 2] = brightness;
+    // Concentric rings
+    const rings = [];
+    for (let i = 0; i < 15; i++) {
+        const radius = 3 + i * 0.8;
+        const ringGeo = new THREE.RingGeometry(radius, radius + 0.05, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: i % 4 === 0 ? 0xff3c00 : 0xffffff,
+            transparent: true,
+            opacity: 0.3 - i * 0.015,
+            side: THREE.DoubleSide
+        });
+        ringMat.userData = { baseOpacity: 0.3 - i * 0.015 };
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.z = -i * 2;
+        ring.userData = { baseZ: -i * 2, index: i };
+        group.add(ring);
+        rings.push(ring);
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const material = new THREE.PointsMaterial({
-        size: 0.05,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.8,
-        blending: THREE.AdditiveBlending
-    });
-
-    const tunnel = new THREE.Points(geometry, material);
-    group.add(tunnel);
-
     // Central void sphere
-    const voidGeo = new THREE.SphereGeometry(2, 32, 32);
+    const voidGeo = new THREE.SphereGeometry(1.5, 32, 32);
     const voidMat = new THREE.MeshBasicMaterial({
         color: 0x000000,
         transparent: true,
-        opacity: 0.95
+        opacity: 1
     });
+    voidMat.userData = { baseOpacity: 1 };
     const voidSphere = new THREE.Mesh(voidGeo, voidMat);
+    voidSphere.position.z = -30;
     group.add(voidSphere);
 
-    // Event horizon ring
-    const ringGeo = new THREE.TorusGeometry(3, 0.1, 16, 100);
-    const ringMat = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.4
-    });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.rotation.x = Math.PI / 2;
-    group.add(ring);
+    // Particle stream flowing toward void
+    const streamCount = 400;
+    const streamPositions = new Float32Array(streamCount * 3);
+    const streamVelocities = [];
 
-    return { group, tunnel, voidSphere, ring };
+    for (let i = 0; i < streamCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 2 + Math.random() * 10;
+        streamPositions[i * 3] = Math.cos(angle) * radius;
+        streamPositions[i * 3 + 1] = Math.sin(angle) * radius;
+        streamPositions[i * 3 + 2] = Math.random() * -30;
+        streamVelocities.push(0.05 + Math.random() * 0.1);
+    }
+
+    const streamGeo = new THREE.BufferGeometry();
+    streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPositions, 3));
+
+    const streamMat = new THREE.PointsMaterial({
+        size: 0.04,
+        color: 0x8866ff,
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending
+    });
+    streamMat.userData = { baseOpacity: 0.6 };
+    const stream = new THREE.Points(streamGeo, streamMat);
+    stream.userData = { velocities: streamVelocities };
+    group.add(stream);
+
+    return { group, rings, voidSphere, stream };
 }
 
 export function updateVoidTunnel(data, mouse, time) {
-    const { tunnel, voidSphere, ring } = data;
+    const { rings, voidSphere, stream } = data;
 
-    tunnel.rotation.z = time * 0.08 + mouse.x * 0.2;
-    tunnel.rotation.y = mouse.x * 0.1;
-    tunnel.rotation.x = -mouse.y * 0.1;
+    // Animate rings
+    rings.forEach((ring, i) => {
+        ring.rotation.z = time * 0.1 * (i % 2 ? 1 : -1);
+        ring.scale.setScalar(1 + Math.sin(time + i * 0.3) * 0.05);
+    });
 
-    tunnel.scale.x = 1 + Math.sin(time * 1.5) * 0.08 - mouse.y * 0.2;
-    tunnel.scale.y = 1 + Math.cos(time * 1.5) * 0.08 + mouse.x * 0.2;
-
-    voidSphere.scale.setScalar(1 + Math.sin(time * 3) * 0.05);
-    voidSphere.position.x = -mouse.x * 0.5;
+    // Pulsing void
+    voidSphere.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+    voidSphere.position.x = mouse.x * 0.5;
     voidSphere.position.y = mouse.y * 0.5;
 
-    ring.rotation.z = time * 0.5;
-    ring.rotation.x = Math.PI / 2 + mouse.y * 0.3;
-    ring.rotation.y = -mouse.x * 0.3;
-    ring.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+    // Animate particle stream toward void
+    const positions = stream.geometry.attributes.position.array;
+    const velocities = stream.userData.velocities;
+
+    for (let i = 0; i < velocities.length; i++) {
+        positions[i * 3 + 2] -= velocities[i];
+        if (positions[i * 3 + 2] < -35) {
+            positions[i * 3 + 2] = 5;
+        }
+    }
+    stream.geometry.attributes.position.needsUpdate = true;
+    stream.rotation.z = time * 0.05 + mouse.x * 0.1;
 }

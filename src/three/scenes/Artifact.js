@@ -1,85 +1,103 @@
 import * as THREE from 'three';
 
-// Scene 2: Crystal Artifact (Icosahedron)
+// SCENE 2: CRYSTAL ARTIFACT - Elegant Geometric Structure
+// Awwwards-style: Minimal wireframe with subtle internal glow
+
 export function createArtifact() {
     const group = new THREE.Group();
-    group.position.set(5, 0, -25);
+    group.position.z = -25;
 
-    // Main crystal
-    const geometry = new THREE.IcosahedronGeometry(3.5, 1);
-    const material = new THREE.MeshPhysicalMaterial({
-        color: 0xff00aa,
-        metalness: 0.95,
-        roughness: 0.08,
-        clearcoat: 1,
-        clearcoatRoughness: 0.1,
-        flatShading: true,
-        envMapIntensity: 2
+    // Main crystal - Dodecahedron for elegance
+    const crystalGeo = new THREE.DodecahedronGeometry(3, 0);
+    const crystalMat = new THREE.MeshBasicMaterial({
+        color: 0x00ff88,
+        transparent: true,
+        opacity: 0.15,
+        wireframe: true
     });
-
-    const crystal = new THREE.Mesh(geometry, material);
+    crystalMat.userData = { baseOpacity: 0.15 };
+    const crystal = new THREE.Mesh(crystalGeo, crystalMat);
     group.add(crystal);
 
-    // Inner glow
-    const innerGeo = new THREE.IcosahedronGeometry(2, 0);
-    const innerMat = new THREE.MeshBasicMaterial({
-        color: 0xff44cc,
+    // Inner core - solid glow
+    const coreGeo = new THREE.IcosahedronGeometry(1.5, 2);
+    const coreMat = new THREE.MeshBasicMaterial({
+        color: 0xff3c00,
         transparent: true,
         opacity: 0.3
     });
-    const innerCrystal = new THREE.Mesh(innerGeo, innerMat);
-    group.add(innerCrystal);
+    coreMat.userData = { baseOpacity: 0.3 };
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    group.add(core);
 
     // Outer wireframe cage
-    const wireGeo = new THREE.IcosahedronGeometry(4.5, 1);
-    const wireMat = new THREE.MeshBasicMaterial({
+    const cageGeo = new THREE.IcosahedronGeometry(4.5, 1);
+    const cageMat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
-        wireframe: true,
         transparent: true,
-        opacity: 0.08
+        opacity: 0.08,
+        wireframe: true
     });
-    const wireCage = new THREE.Mesh(wireGeo, wireMat);
-    group.add(wireCage);
+    cageMat.userData = { baseOpacity: 0.08 };
+    const cage = new THREE.Mesh(cageGeo, cageMat);
+    group.add(cage);
 
     // Orbiting particles
-    const orbitGeo = new THREE.BufferGeometry();
     const orbitCount = 200;
-    const orbitPos = new Float32Array(orbitCount * 3);
+    const orbitPositions = new Float32Array(orbitCount * 3);
+    const orbitColors = new Float32Array(orbitCount * 3);
 
-    for (let i = 0; i < orbitCount * 3; i += 3) {
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 5 + Math.random() * 2;
-        orbitPos[i] = Math.cos(angle) * radius;
-        orbitPos[i + 1] = (Math.random() - 0.5) * 4;
-        orbitPos[i + 2] = Math.sin(angle) * radius;
+    for (let i = 0; i < orbitCount; i++) {
+        const angle = (i / orbitCount) * Math.PI * 2;
+        const radius = 5 + Math.sin(i * 0.5) * 1;
+        const height = (Math.random() - 0.5) * 4;
+
+        orbitPositions[i * 3] = Math.cos(angle) * radius;
+        orbitPositions[i * 3 + 1] = height;
+        orbitPositions[i * 3 + 2] = Math.sin(angle) * radius;
+
+        // Gradient colors
+        const t = i / orbitCount;
+        orbitColors[i * 3] = 1;
+        orbitColors[i * 3 + 1] = 0.24 + t * 0.5;
+        orbitColors[i * 3 + 2] = t;
     }
-    orbitGeo.setAttribute('position', new THREE.BufferAttribute(orbitPos, 3));
+
+    const orbitGeo = new THREE.BufferGeometry();
+    orbitGeo.setAttribute('position', new THREE.BufferAttribute(orbitPositions, 3));
+    orbitGeo.setAttribute('color', new THREE.BufferAttribute(orbitColors, 3));
 
     const orbitMat = new THREE.PointsMaterial({
-        size: 0.03,
-        color: 0xff88dd,
+        size: 0.06,
+        vertexColors: true,
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.8,
         blending: THREE.AdditiveBlending
     });
+    orbitMat.userData = { baseOpacity: 0.8 };
     const orbitParticles = new THREE.Points(orbitGeo, orbitMat);
     group.add(orbitParticles);
 
-    return { group, crystal, innerCrystal, wireCage, orbitParticles };
+    return { group, crystal, core, cage, orbitParticles };
 }
 
 export function updateArtifact(data, mouse, time) {
-    const { crystal, innerCrystal, wireCage, orbitParticles } = data;
+    const { crystal, core, cage, orbitParticles } = data;
 
-    crystal.rotation.y = time * 0.3 + mouse.x * 0.5;
-    crystal.rotation.z = Math.sin(time * 0.5) * 0.15 - mouse.y * 0.3;
+    // Slow elegant rotation
+    crystal.rotation.y = time * 0.15 + mouse.x * 0.3;
+    crystal.rotation.x = time * 0.1 + mouse.y * 0.2;
 
-    innerCrystal.rotation.y = -time * 0.5;
-    innerCrystal.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+    // Pulsing core
+    core.rotation.y = -time * 0.3;
+    core.rotation.z = time * 0.2;
+    core.scale.setScalar(1 + Math.sin(time * 2) * 0.15);
 
-    wireCage.rotation.x = time * 0.15 + mouse.y * 0.2;
-    wireCage.rotation.y = -time * 0.1 + mouse.x * 0.2;
+    // Counter-rotating cage
+    cage.rotation.y = -time * 0.08 + mouse.x * 0.1;
+    cage.rotation.x = time * 0.05 - mouse.y * 0.1;
 
-    orbitParticles.rotation.y = time * 0.2 + mouse.x * 0.1;
-    orbitParticles.rotation.x = mouse.y * 0.2;
+    // Orbiting particles
+    orbitParticles.rotation.y = time * 0.2 + mouse.x * 0.05;
+    orbitParticles.rotation.x = Math.sin(time * 0.5) * 0.1;
 }
